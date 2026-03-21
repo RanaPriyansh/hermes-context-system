@@ -1,5 +1,9 @@
 # Hermes Three-Tier Context System
 
+[![GitHub](https://img.shields.io/badge/GitHub-000000?logo=github)](https://github.com/thielon-apps/hermes-context-system)
+[![License](https://img.shields.io/github/license/thielon-apps/hermes-context-system)](https://github.com/thielon-apps/hermes-context-system/blob/main/LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/thielon-apps/hermes-context-system)](https://github.com/thielon-apps/hermes-context-system/commits/main)
+
 Inspired by OpenViking's (ByteDance) context database for agents.
 
 ## The Core Insight
