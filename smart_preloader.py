@@ -9,11 +9,12 @@ Key insight: Load what you NEED, not what you HAVE.
 This is the "filesystem paradigm" — context is a tree, you cd into branches.
 """
 
-import os
 import json
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional
+
+from hermes_paths import cron_output_path, memory_file_path, rag_path, vault_path
 
 # ============================================
 # L0: Core Identity (Always Loaded)
@@ -141,7 +142,7 @@ class L1ActiveContext:
 
     def _load_recent_memory(self) -> List[str]:
         """Load recent memory entries"""
-        memory_file = Path.home() / ".hermes" / "memory" / "memory.json"
+        memory_file = memory_file_path()
         if memory_file.exists():
             try:
                 data = json.loads(memory_file.read_text())
@@ -153,9 +154,9 @@ class L1ActiveContext:
 
     def _load_cron_outputs(self) -> List[str]:
         """Load recent cron outputs"""
-        cron_path = Path.home() / ".hermes" / "cron" / "output"
-        if cron_path.exists():
-            outputs = sorted(cron_path.glob("*.md"), reverse=True)
+        active_cron_path = cron_output_path()
+        if active_cron_path.exists():
+            outputs = sorted(active_cron_path.glob("*.md"), reverse=True)
             return [o.stem for o in outputs[:5]]
         return []
 
@@ -247,8 +248,8 @@ class ContextSystem:
     """
 
     def __init__(self):
-        self.vault_path = str(Path.home() / "obsidian-hermes-vault")
-        self.rag_path = str(Path.home() / "hermes-rag-db")
+        self.vault_path = str(vault_path())
+        self.rag_path = str(rag_path())
 
         self.l0 = L0Identity()
         self.l1 = L1ActiveContext(self.vault_path)

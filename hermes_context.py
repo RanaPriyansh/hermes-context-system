@@ -10,7 +10,6 @@ This is the "filesystem mount" for agent context.
 Load what you NEED, not what you HAVE.
 """
 
-import os
 import json
 import sys
 from pathlib import Path
@@ -20,14 +19,15 @@ from datetime import datetime
 from smart_preloader import L0Identity, L1ActiveContext, L2DeepKnowledge
 from vault_integration import scan_active_protocols, find_relevant_notes
 from rag_integration import rag_query
+from hermes_paths import context_cache_path, rag_path, vault_path
 
 class HermesContext:
     """Master context system for Hermes"""
 
     def __init__(self):
-        self.vault_path = str(Path.home() / "obsidian-hermes-vault")
-        self.rag_path = str(Path.home() / "hermes-rag-db")
-        self.cache_path = Path.home() / ".hermes" / "context-cache"
+        self.vault_path = str(vault_path())
+        self.rag_path = str(rag_path())
+        self.cache_path = context_cache_path()
         self.cache_path.mkdir(parents=True, exist_ok=True)
 
         # Initialize tiers
@@ -75,14 +75,14 @@ class HermesContext:
 
         for cache_file in cache_files:
             try:
-                data = json.loads(cache_file.read_text())
+                data = json.loads(cache_file.read_text(encoding='utf-8'))
                 timestamp = datetime.fromisoformat(data['timestamp'])
                 age = (datetime.now() - timestamp).total_seconds() / 3600
 
                 if age <= max_age_hours:
                     print(f"Loaded cached context from {timestamp}")
                     return data['content']
-            except:
+            except (json.JSONDecodeError, KeyError, OSError, ValueError):
                 continue
 
         return ""

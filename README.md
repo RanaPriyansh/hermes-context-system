@@ -1,61 +1,101 @@
 # Hermes Three-Tier Context System
 
-[![GitHub](https://img.shields.io/badge/GitHub-000000?logo=github)](https://github.com/thielon-apps/hermes-context-system)
-[![License](https://img.shields.io/github/license/thielon-apps/hermes-context-system)](https://github.com/thielon-apps/hermes-context-system/blob/main/LICENSE)
-[![Last commit](https://img.shields.io/github/last-commit/thielon-apps/hermes-context-system)](https://github.com/thielon-apps/hermes-context-system/commits/main)
+Inspired by OpenViking's context database idea for agents.
 
-Inspired by OpenViking's (ByteDance) context database for agents.
+The core idea is simple: agents should load context in tiers based on relevance instead of dumping everything into the prompt.
 
-## The Core Insight
+## Three-tier model
 
-Agents burn tokens on irrelevant context. The fix: load context in tiers based on relevance.
+### L0: Core identity
+- Agent identity and directives
+- User profile and stable preferences
+- Always loaded
+- Small and predictable
 
-## Three-Tier Architecture
+### L1: Active context
+- Current task context
+- Relevant vault notes
+- Recent memory, skills, sessions, cron output
+- Loaded per session or task
 
-### L0: Core Identity (Always Loaded)
-- Agent identity, personality, core directives
-- User preferences and profile
-- Active protocols and frameworks
-- **Size**: ~2K tokens
-- **Loading**: Every session, no exceptions
+### L2: Deep knowledge
+- RAG-backed or vault-backed retrieval
+- Historical and broader knowledge
+- Queried on demand
 
-### L1: Active Context (Session-Scoped)
-- Current project files and task state
-- Recent conversation context
-- Relevant vault notes (RAG-retrieved)
-- Active cron job outputs
-- **Size**: ~8K tokens
-- **Loading**: Smart retrieval based on current task
+## Repository status
 
-### L2: Deep Knowledge (On-Demand)
-- Full vault notes (35+ indexed in ChromaDB)
-- Historical session transcripts
-- External research (web, arXiv, etc.)
-- Skill definitions and procedures
-- **Size**: Unlimited (queried, not loaded)
-- **Loading**: Only when explicitly needed or RAG-retrieved
+This project is intentionally lightweight. It keeps the existing script-first layout, but now has:
+- packaging metadata via `pyproject.toml`
+- console script entry points
+- environment-variable based path overrides for safer local testing
+- a small pytest regression suite
 
-## Token Savings
+## Default paths
 
-| Approach | Tokens per Session | Notes |
-|----------|-------------------|-------|
-| Naive (load everything) | ~50K | Everything in context |
-| Three-tier | ~10K | 80% reduction |
-| Three-tier + RAG | ~12K | Better quality, still 76% savings |
+By default the scripts look for Hermes data in:
+- vault: `~/obsidian-hermes-vault`
+- rag db: `~/hermes-rag-db`
+- Hermes home: `~/.hermes`
 
-## Implementation
+For testing or custom setups, override them with:
+- `HERMES_VAULT_PATH`
+- `HERMES_RAG_PATH`
+- `HERMES_HOME`
+
+## Install
+
+Editable install:
 
 ```bash
-# Core system
-python3 context_manager.py load --tier L0
-python3 context_manager.py load --tier L1 --task "agent identity research"
-python3 context_manager.py query --tier L2 --query "EigenTrust reputation"
+python3 -m pip install -e .
 ```
 
-## Integration Points
+Install with test dependencies:
 
-1. **ChromaDB RAG** (`~/hermes-rag-db/`) — L2 retrieval
-2. **Obsidian Vault** (`~/obsidian-hermes-vault/`) — L1/L2 source
-3. **Memory System** (~/.hermes/memory/) — L0 core
-4. **Session Transcripts** — L2 historical context
-5. **Skills System** (~/.hermes/skills/) — L1 active skills
+```bash
+python3 -m pip install -e .[test]
+```
+
+## Run
+
+Existing script usage is preserved:
+
+```bash
+python3 hermes_context.py l0
+python3 hermes_context.py l1 "agent identity research"
+python3 hermes_context.py l2 "EigenTrust reputation"
+python3 hermes_context.py full "agent identity research"
+
+python3 context_manager.py load --tier L0
+python3 context_manager.py load --tier L1 --task "agent identity research"
+python3 context_manager.py query "research agent identity" --tier L1
+```
+
+After installation, console entry points are also available:
+
+```bash
+hermes-context l0
+hermes-context-manager load --tier L0
+hermes-session-preloader
+```
+
+## Test
+
+```bash
+python3 -m pytest
+python3 -m compileall context_manager.py hermes_context.py hermes_paths.py integration.py rag_integration.py session_preloader.py smart_preloader.py vault_integration.py tests
+```
+
+## What is covered by tests
+
+The regression suite checks:
+- L0 loading from memory and protocol files
+- L1 to L2 escalation behavior for complex queries
+- context cache save/load behavior
+- CLI smoke tests for the main scripts
+
+## Notes
+
+- ChromaDB is optional at runtime. If it is unavailable, RAG calls fall back to error text or vault search behavior already present in the scripts.
+- This repo still uses top-level modules rather than a package directory to keep the existing CLI layout unchanged.

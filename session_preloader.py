@@ -6,24 +6,25 @@ This is the "filesystem mount" — it prepares the working directory
 before you cd into it.
 """
 
-import os
 import json
 from pathlib import Path
 from datetime import datetime
 
+from hermes_paths import context_cache_path, cron_output_path, memory_file_path, vault_path
+
 def preload_session():
     """Pre-build context for the next session"""
-    vault_path = Path.home() / "obsidian-hermes-vault"
+    active_vault_path = vault_path()
 
     # 1. Scan for active protocols
     protocols = []
-    for md in vault_path.rglob("*.md"):
+    for md in active_vault_path.rglob("*.md"):
         if "protocol" in md.stem.lower():
             protocols.append(md.stem)
 
     # 2. Load recent memory
     memory_entries = []
-    memory_file = Path.home() / ".hermes" / "memory" / "memory.json"
+    memory_file = memory_file_path()
     if memory_file.exists():
         try:
             data = json.loads(memory_file.read_text())
@@ -33,9 +34,9 @@ def preload_session():
 
     # 3. Load recent cron outputs
     cron_outputs = []
-    cron_path = Path.home() / ".hermes" / "cron" / "output"
-    if cron_path.exists():
-        outputs = sorted(cron_path.glob("*.md"), reverse=True)
+    active_cron_path = cron_output_path()
+    if active_cron_path.exists():
+        outputs = sorted(active_cron_path.glob("*.md"), reverse=True)
         cron_outputs = [o.stem for o in outputs[:5]]
 
     # 4. Build session context
@@ -59,7 +60,7 @@ def preload_session():
     }
 
     # 5. Save session context
-    session_path = Path.home() / ".hermes" / "context-cache"
+    session_path = context_cache_path()
     session_path.mkdir(parents=True, exist_ok=True)
 
     cache_file = session_path / f"session-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
@@ -78,5 +79,11 @@ def preload_session():
 
     return session_context
 
-if __name__ == "__main__":
+
+def main():
+    """Console-script entry point."""
     preload_session()
+
+
+if __name__ == "__main__":
+    main()

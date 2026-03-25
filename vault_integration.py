@@ -6,14 +6,15 @@ When you need active context, this module scans the vault
 for protocols, recent notes, and task-relevant content.
 """
 
-import os
 from pathlib import Path
 from datetime import datetime
+
+from hermes_paths import vault_path as default_vault_path
 
 def scan_active_protocols(vault_path: str = None) -> list:
     """Scan vault for active protocol files"""
     if vault_path is None:
-        vault_path = str(Path.home() / "obsidian-hermes-vault")
+        vault_path = str(default_vault_path())
 
     vault = Path(vault_path)
     protocols = []
@@ -33,7 +34,7 @@ def scan_active_protocols(vault_path: str = None) -> list:
 def find_relevant_notes(query: str, vault_path: str = None, limit: int = 5) -> list:
     """Find vault notes relevant to a query"""
     if vault_path is None:
-        vault_path = str(Path.home() / "obsidian-hermes-vault")
+        vault_path = str(default_vault_path())
 
     vault = Path(vault_path)
     results = []

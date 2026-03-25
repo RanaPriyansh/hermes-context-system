@@ -15,6 +15,8 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 
+from hermes_paths import cron_output_path, memory_file_path, rag_path, sessions_path, skills_path, vault_path
+
 # ============================================
 # Context Tiers
 # ============================================
@@ -204,7 +206,7 @@ class ContextManager:
 
     def _load_memory(self) -> List[str]:
         """Load core memory entries"""
-        memory_file = Path.home() / ".hermes" / "memory" / "memory.json"
+        memory_file = memory_file_path()
         if memory_file.exists():
             with open(memory_file) as f:
                 data = json.load(f)
@@ -231,24 +233,24 @@ class ContextManager:
 
     def _load_active_skills(self) -> List[str]:
         """Load active skills"""
-        skills_path = Path.home() / ".hermes" / "skills"
-        if skills_path.exists():
-            return [f.parent.name for f in skills_path.rglob("SKILL.md")][:10]
+        active_skills_path = skills_path()
+        if active_skills_path.exists():
+            return [f.parent.name for f in active_skills_path.rglob("SKILL.md")][:10]
         return []
 
     def _load_recent_sessions(self, limit: int = 3) -> List[str]:
         """Load recent session summaries"""
-        sessions_path = Path.home() / ".hermes" / "sessions"
-        if sessions_path.exists():
-            sessions = sorted(sessions_path.glob("*.json"), reverse=True)
+        recent_sessions_path = sessions_path()
+        if recent_sessions_path.exists():
+            sessions = sorted(recent_sessions_path.glob("*.json"), reverse=True)
             return [s.stem for s in sessions[:limit]]
         return []
 
     def _load_cron_outputs(self) -> List[str]:
         """Load recent cron outputs"""
-        cron_path = Path.home() / ".hermes" / "cron" / "output"
-        if cron_path.exists():
-            outputs = sorted(cron_path.glob("*.md"), reverse=True)
+        active_cron_path = cron_output_path()
+        if active_cron_path.exists():
+            outputs = sorted(active_cron_path.glob("*.md"), reverse=True)
             return [o.stem for o in outputs[:5]]
         return []
 
@@ -276,7 +278,7 @@ class ContextManager:
 
     def _estimate_tokens(self, text: str) -> int:
         """Rough token estimation"""
-        return len(text.split()) * 1.3  # ~1.3 tokens per word
+        return int(len(text.split()) * 1.3)  # ~1.3 tokens per word
 
 # ============================================
 # CLI Interface
@@ -285,10 +287,10 @@ class ContextManager:
 def main():
     import sys
 
-    vault_path = os.path.expanduser("~/obsidian-hermes-vault")
-    rag_path = os.path.expanduser("~/hermes-rag-db")
+    resolved_vault_path = str(vault_path())
+    resolved_rag_path = str(rag_path())
 
-    manager = ContextManager(vault_path, rag_path)
+    manager = ContextManager(resolved_vault_path, resolved_rag_path)
 
     if len(sys.argv) < 2:
         print("Usage: python3 context_manager.py <command> [args]")

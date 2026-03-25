@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hermes-context-system"
+version = "0.1.0"
+description = "Three-tier context loading utilities for Hermes"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+authors = [
+  { name = "Thielon Apps" }
+]
+keywords = ["agent", "context", "rag", "cli"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/RanaPriyansh/hermes-context-system"
+Repository = "https://github.com/RanaPriyansh/hermes-context-system"
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[project.scripts]
+hermes-context = "hermes_context:main"
+hermes-context-manager = "context_manager:main"
+hermes-session-preloader = "session_preloader:main"
+
+[tool.setuptools]
+py-modules = [
+  "context_manager",
+  "hermes_context",
+  "hermes_paths",
+  "integration",
+  "rag_integration",
+  "session_preloader",
+  "smart_preloader",
+  "vault_integration",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

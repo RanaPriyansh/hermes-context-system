@@ -6,15 +6,16 @@ When you need deep knowledge, this module queries ChromaDB
 and returns only the relevant snippets.
 """
 
-import os
 from pathlib import Path
+
+from hermes_paths import rag_path as default_rag_path
 
 def rag_query(query: str, n_results: int = 5) -> str:
     """Query ChromaDB for relevant context"""
     try:
         import chromadb
-        rag_path = str(Path.home() / "hermes-rag-db")
-        client = chromadb.PersistentClient(path=rag_path)
+        rag_db_path = str(default_rag_path())
+        client = chromadb.PersistentClient(path=rag_db_path)
         collection = client.get_collection("hermes_vault")
         results = collection.query(query_texts=[query], n_results=n_results)
 

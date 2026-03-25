@@ -3,11 +3,12 @@ Integration: Three-Tier Context + Existing Hermes Infrastructure
 Connects the context system with vault, memory, ChromaDB, and session transcripts.
 """
 
-import os
 import json
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
+
+from hermes_paths import cron_output_path, memory_file_path, sessions_path, vault_path, rag_path
 
 # ============================================
 # Vault Context Provider
@@ -111,7 +112,7 @@ class MemoryContextProvider:
     """Provides context from Hermes memory system"""
 
     def __init__(self):
-        self.memory_path = Path.home() / ".hermes" / "memory"
+        self.memory_path = memory_file_path().parent
 
     def get_l0_memory(self) -> str:
         """Get core memory entries for L0"""
@@ -212,7 +213,7 @@ class SessionContextProvider:
     """Provides context from session transcripts"""
 
     def __init__(self):
-        self.sessions_path = Path.home() / ".hermes" / "sessions"
+        self.sessions_path = sessions_path()
 
     def get_recent_sessions(self, limit: int = 3) -> str:
         """Get recent session summaries"""
@@ -242,7 +243,7 @@ class CronContextProvider:
     """Provides context from cron outputs"""
 
     def __init__(self):
-        self.cron_path = Path.home() / ".hermes" / "cron" / "output"
+        self.cron_path = cron_output_path()
 
     def get_recent_outputs(self, limit: int = 5) -> str:
         """Get recent cron outputs"""
@@ -270,13 +271,9 @@ class IntegratedContextSystem:
     """
 
     def __init__(self):
-        self.vault = VaultContextProvider(
-            str(Path.home() / "obsidian-hermes-vault")
-        )
+        self.vault = VaultContextProvider(str(vault_path()))
         self.memory = MemoryContextProvider()
-        self.rag = RAGContextProvider(
-            str(Path.home() / "hermes-rag-db")
-        )
+        self.rag = RAGContextProvider(str(rag_path()))
         self.sessions = SessionContextProvider()
         self.cron = CronContextProvider()
 
