@@ -57,6 +57,17 @@ Install with test dependencies:
 python3 -m pip install -e .[test]
 ```
 
+### Fresh-clone setup (exact commands)
+
+```bash
+git clone https://github.com/RanaPriyansh/hermes-context-system.git
+cd hermes-context-system
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .[test]
+```
+
 ## Run
 
 Existing script usage is preserved:
@@ -81,6 +92,14 @@ hermes-session-preloader
 ```
 
 ## Test
+
+Fast machine-checkable validation of the main flow (fresh temp environment + CLI assertions):
+
+```bash
+./scripts/validate_main_flow.sh
+```
+
+Regression suite and module compile check:
 
 ```bash
 python3 -m pytest
