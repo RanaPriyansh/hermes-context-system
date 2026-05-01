@@ -24,3 +24,9 @@ Current git summary: ## main...origin/main
 - The primary workflow has a smoke test or demo path.
 - The highest-leverage blocker is fixed or isolated with evidence.
 - README and this TODO file reflect reality, not aspiration.
+
+## Latest session update (2026-05-01)
+- Added `scripts/validate_main_flow.sh` to machine-check the main CLI flow in an isolated temp environment.
+- Updated README with exact fresh-clone setup commands and the new validation command.
+- Validation evidence: `./scripts/validate_main_flow.sh` passed, `pytest` passed (6 tests), `compileall` passed.
+- Commit: `cd7c842` (`feat: add isolated main-flow validator and quickstart docs`).
