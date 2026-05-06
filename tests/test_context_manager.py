@@ -44,6 +44,20 @@ def test_load_tier_l0_uses_memory_and_protocols(tmp_path, monkeypatch):
     assert isinstance(manager._estimate_tokens("one two three"), int)
 
 
+def test_load_tier_l0_handles_malformed_memory_json(tmp_path, monkeypatch):
+    vault, rag, hermes_home = build_sample_layout(tmp_path)
+    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+
+    # Corrupt memory payload should not crash L0 loading.
+    (hermes_home / "memory" / "memory.json").write_text("{not valid json")
+
+    manager = ContextManager(str(vault), str(rag))
+    output = manager.load_tier("L0")
+
+    assert "=== HERMES IDENTITY ===" in output
+    assert "=== CORE MEMORY ===" in output
+
+
 def test_query_escalates_to_l2_for_complex_questions(tmp_path, monkeypatch):
     vault, rag, hermes_home = build_sample_layout(tmp_path)
     monkeypatch.setenv("HERMES_HOME", str(hermes_home))

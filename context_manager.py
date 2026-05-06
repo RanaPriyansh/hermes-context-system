@@ -205,13 +205,22 @@ class ContextManager:
         ]
 
     def _load_memory(self) -> List[str]:
-        """Load core memory entries"""
+        """Load core memory entries.
+
+        Be resilient to malformed memory files so L0 loading never hard-fails.
+        """
         memory_file = memory_file_path()
-        if memory_file.exists():
-            with open(memory_file) as f:
+        if not memory_file.exists():
+            return []
+
+        try:
+            with open(memory_file, encoding="utf-8") as f:
                 data = json.load(f)
-                return [entry.get('content', '') for entry in data.get('entries', [])]
-        return []
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            return []
+
+        entries = data.get('entries', []) if isinstance(data, dict) else []
+        return [entry.get('content', '') for entry in entries if isinstance(entry, dict)]
 
     def _find_relevant_notes(self, query: str, limit: int = 5) -> List[Dict]:
         """Find relevant vault notes for a query"""
