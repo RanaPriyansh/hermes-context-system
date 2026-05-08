@@ -84,6 +84,28 @@ def test_load_cron_outputs_scans_nested_job_directories(tmp_path, monkeypatch):
     assert "2026-05-08_01-15-29" in cron_outputs
 
 
+def test_load_recent_sessions_uses_mtime_not_filename_order(tmp_path, monkeypatch):
+    vault, rag, hermes_home = build_sample_layout(tmp_path)
+    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+
+    sessions_dir = hermes_home / "sessions"
+    lexicographically_last_but_older = sessions_dir / "z-older-session.json"
+    lexicographically_first_but_newer = sessions_dir / "a-newer-session.json"
+
+    lexicographically_last_but_older.write_text("{}")
+    lexicographically_first_but_newer.write_text("{}")
+
+    # Force deterministic freshness independent of filesystem timing.
+    os.utime(lexicographically_last_but_older, (2800000000, 2800000000))
+    os.utime(lexicographically_first_but_newer, (2800000100, 2800000100))
+
+    manager = ContextManager(str(vault), str(rag))
+    recent_sessions = manager._load_recent_sessions(limit=2)
+
+    assert recent_sessions[0] == "a-newer-session"
+    assert "z-older-session" in recent_sessions
+
+
 def test_query_escalates_to_l2_for_complex_questions(tmp_path, monkeypatch):
     vault, rag, hermes_home = build_sample_layout(tmp_path)
     monkeypatch.setenv("HERMES_HOME", str(hermes_home))

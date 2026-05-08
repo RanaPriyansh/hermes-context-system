@@ -248,11 +248,15 @@ class ContextManager:
         return []
 
     def _load_recent_sessions(self, limit: int = 3) -> List[str]:
-        """Load recent session summaries"""
+        """Load recent session summaries sorted by freshness."""
         recent_sessions_path = sessions_path()
         if recent_sessions_path.exists():
-            sessions = sorted(recent_sessions_path.glob("*.json"), reverse=True)
-            return [s.stem for s in sessions[:limit]]
+            sessions = sorted(
+                (session_file for session_file in recent_sessions_path.glob("*.json") if session_file.is_file()),
+                key=lambda session_file: session_file.stat().st_mtime,
+                reverse=True,
+            )
+            return [session_file.stem for session_file in sessions[:limit]]
         return []
 
     def _load_cron_outputs(self) -> List[str]:
