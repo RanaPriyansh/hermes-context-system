@@ -106,6 +106,37 @@ def test_load_recent_sessions_uses_mtime_not_filename_order(tmp_path, monkeypatc
     assert "z-older-session" in recent_sessions
 
 
+def test_load_recent_sessions_skips_files_with_stat_errors(tmp_path, monkeypatch):
+    vault, rag, hermes_home = build_sample_layout(tmp_path)
+    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+
+    sessions_dir = hermes_home / "sessions"
+    newer = sessions_dir / "newer-session.json"
+    broken = sessions_dir / "broken-session.json"
+
+    newer.write_text("{}")
+    broken.write_text("{}")
+
+    os.utime(newer, (2900000100, 2900000100))
+    os.utime(broken, (2900000200, 2900000200))
+
+    original_stat = Path.stat
+
+    def flaky_stat(path_obj, *args, **kwargs):
+        if path_obj.name == "broken-session.json":
+            raise FileNotFoundError("simulated race during stat")
+        return original_stat(path_obj, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", flaky_stat)
+
+    manager = ContextManager(str(vault), str(rag))
+    recent_sessions = manager._load_recent_sessions(limit=3)
+
+    # Broken files should be skipped instead of crashing the entire session loader.
+    assert "broken-session" not in recent_sessions
+    assert recent_sessions[0] == "newer-session"
+
+
 def test_query_escalates_to_l2_for_complex_questions(tmp_path, monkeypatch):
     vault, rag, hermes_home = build_sample_layout(tmp_path)
     monkeypatch.setenv("HERMES_HOME", str(hermes_home))

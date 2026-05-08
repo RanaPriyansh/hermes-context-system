@@ -247,17 +247,28 @@ class ContextManager:
             return [f.parent.name for f in active_skills_path.rglob("SKILL.md")][:10]
         return []
 
+    def _safe_mtime(self, file_path: Path) -> Optional[float]:
+        """Return file mtime or None when file metadata is unavailable."""
+        try:
+            return file_path.stat().st_mtime
+        except OSError:
+            return None
+
     def _load_recent_sessions(self, limit: int = 3) -> List[str]:
         """Load recent session summaries sorted by freshness."""
         recent_sessions_path = sessions_path()
-        if recent_sessions_path.exists():
-            sessions = sorted(
-                (session_file for session_file in recent_sessions_path.glob("*.json") if session_file.is_file()),
-                key=lambda session_file: session_file.stat().st_mtime,
-                reverse=True,
-            )
-            return [session_file.stem for session_file in sessions[:limit]]
-        return []
+        if not recent_sessions_path.exists():
+            return []
+
+        sessions_with_mtime = []
+        for session_file in recent_sessions_path.glob("*.json"):
+            mtime = self._safe_mtime(session_file)
+            if mtime is None:
+                continue
+            sessions_with_mtime.append((mtime, session_file))
+
+        sessions_with_mtime.sort(key=lambda item: item[0], reverse=True)
+        return [session_file.stem for _, session_file in sessions_with_mtime[:limit]]
 
     def _load_cron_outputs(self) -> List[str]:
         """Load recent cron outputs.
@@ -270,16 +281,15 @@ class ContextManager:
         if not active_cron_path.exists():
             return []
 
-        outputs = sorted(
-            (
-                output_file
-                for output_file in active_cron_path.rglob("*.md")
-                if output_file.is_file()
-            ),
-            key=lambda output_file: output_file.stat().st_mtime,
-            reverse=True,
-        )
-        return [output_file.stem for output_file in outputs[:5]]
+        outputs_with_mtime = []
+        for output_file in active_cron_path.rglob("*.md"):
+            mtime = self._safe_mtime(output_file)
+            if mtime is None:
+                continue
+            outputs_with_mtime.append((mtime, output_file))
+
+        outputs_with_mtime.sort(key=lambda item: item[0], reverse=True)
+        return [output_file.stem for _, output_file in outputs_with_mtime[:5]]
 
     def _rag_query(self, query: str, n_results: int = 10) -> List[Dict]:
         """Query ChromaDB for relevant context"""
