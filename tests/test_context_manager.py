@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 from context_manager import ContextManager
@@ -56,6 +57,31 @@ def test_load_tier_l0_handles_malformed_memory_json(tmp_path, monkeypatch):
 
     assert "=== HERMES IDENTITY ===" in output
     assert "=== CORE MEMORY ===" in output
+
+
+def test_load_cron_outputs_scans_nested_job_directories(tmp_path, monkeypatch):
+    vault, rag, hermes_home = build_sample_layout(tmp_path)
+    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+
+    # Real cron layout nests markdown outputs under job-id directories.
+    nested_old = hermes_home / "cron" / "output" / "job-a" / "2026-05-08_01-15-29.md"
+    nested_new = hermes_home / "cron" / "output" / "job-b" / "2026-05-08_01-25-29.md"
+    nested_old.parent.mkdir(parents=True, exist_ok=True)
+    nested_new.parent.mkdir(parents=True, exist_ok=True)
+    nested_old.write_text("old run")
+    nested_new.write_text("new run")
+
+    # Make ordering deterministic without sleep-based timing.
+    top_level = hermes_home / "cron" / "output" / "daily.md"
+    os.utime(top_level, (1690000000, 1690000000))
+    os.utime(nested_old, (1700000000, 1700000000))
+    os.utime(nested_new, (1700000100, 1700000100))
+
+    manager = ContextManager(str(vault), str(rag))
+    cron_outputs = manager._load_cron_outputs()
+
+    assert cron_outputs[0] == "2026-05-08_01-25-29"
+    assert "2026-05-08_01-15-29" in cron_outputs
 
 
 def test_query_escalates_to_l2_for_complex_questions(tmp_path, monkeypatch):

@@ -256,12 +256,26 @@ class ContextManager:
         return []
 
     def _load_cron_outputs(self) -> List[str]:
-        """Load recent cron outputs"""
+        """Load recent cron outputs.
+
+        Cron outputs are stored under per-job subdirectories (e.g.
+        ~/.hermes/cron/output/<job-id>/*.md), so scan recursively and sort by
+        modification time to surface the true newest runs.
+        """
         active_cron_path = cron_output_path()
-        if active_cron_path.exists():
-            outputs = sorted(active_cron_path.glob("*.md"), reverse=True)
-            return [o.stem for o in outputs[:5]]
-        return []
+        if not active_cron_path.exists():
+            return []
+
+        outputs = sorted(
+            (
+                output_file
+                for output_file in active_cron_path.rglob("*.md")
+                if output_file.is_file()
+            ),
+            key=lambda output_file: output_file.stat().st_mtime,
+            reverse=True,
+        )
+        return [output_file.stem for output_file in outputs[:5]]
 
     def _rag_query(self, query: str, n_results: int = 10) -> List[Dict]:
         """Query ChromaDB for relevant context"""
